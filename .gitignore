@@ -30,3 +30,6 @@ proguard/
 .idea
 
 BasicMultitouch.iml
+
+#Mac
+.DS_Store
