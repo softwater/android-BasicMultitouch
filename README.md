@@ -47,8 +47,6 @@ Pre-requisites
 Screenshots
 -------------
 
-<img src="screenshots/intro.png" height="400" alt="Screenshot"/> <img src="screenshots/touches.png" height="400" alt="Screenshot"/>
-
 ![](screenshots/intro.png)![](screenshots/touches.png)
 
 Getting Started
