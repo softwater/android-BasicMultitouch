@@ -47,7 +47,7 @@ Pre-requisites
 Screenshots
 -------------
 
-<img src="screenshots/intro.png" height="400" alt="Screenshot"/> <img src="screenshots/touches.png" height="400" alt="Screenshot"/>
+<img src="/android-BasicMultitouch/blob/master/screenshots/intro.png" height="400" alt="Screenshot"/> <img src="/android-BasicMultitouch/blob/master/screenshots/touches.png" height="400" alt="Screenshot"/>
 
 Getting Started
 ---------------
