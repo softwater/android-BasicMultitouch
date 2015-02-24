@@ -47,8 +47,7 @@ Pre-requisites
 Screenshots
 -------------
 
-<img src="https://github.com/zjq125/android-BasicMultitouch/blob/master/screenshots/intro.png" height="400" alt="Screenshot"/> 
-<img src="https://github.com/zjq125/android-BasicMultitouch/blob/master/screenshots/touches.png" height="400" alt="Screenshot"/>
+<img src="screenshots/intro.png" height="400" alt="Screenshot"/> <img src="screenshots/touches.png" height="400" alt="Screenshot"/>
 
 Getting Started
 ---------------
