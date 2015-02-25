@@ -30,15 +30,47 @@ import com.example.android.basicmultitouch.Pools.SimplePool;
 
 /**
  * View that shows touch events and their history. This view demonstrates the
- * use of {@link #onTouchEvent(android.view.MotionEvent)} and {@link android.view.MotionEvent}s to keep
+ * use of {@link #onTouchEvent(android.view.MotionEvent)} and {@link android.view.MotionEvent}s to
+ * keep
  * track of touch pointers across events.
  */
 public class TouchDisplayView extends View {
 
-    // Hold data for active touch pointer IDs
+    // radius of active touch circle in dp
+    private static final float CIRCLE_RADIUS_DP = 75f;
+    // radius of historical circle in dp
+    private static final float CIRCLE_HISTORICAL_RADIUS_DP = 7f;
+
+    // calculated radiuses in px
+    private float mCircleRadius;
+    private float mCircleHistoricalRadius;
+
+    private Paint mCirclePaint = new Paint();
+    private Paint mTextPaint = new Paint();
+
+    private static final int BACKGROUND_ACTIVE = Color.WHITE;
+
+    // inactive border
+    private static final float INACTIVE_BORDER_DP = 15f;
+    private static final int INACTIVE_BORDER_COLOR = 0xFFffd060;
+    private Paint mBorderPaint = new Paint();
+    private float mBorderWidth;
+
+    public final int[] COLORS = {
+            0xFF33B5E5, 0xFFAA66CC, 0xFF99CC00, 0xFFFFBB33, 0xFFFF4444, 0xFF0099CC, 0xFF9933CC,
+            0xFF669900, 0xFFFF8800, 0xFFCC0000
+    };
+
+    /**
+     * Hold data for active touch pointer IDs
+     * 持有所有保持触摸状态的IDs
+     */
     private SparseArray<TouchHistory> mTouches;
 
-    // Is there an active touch?
+    /**
+     * Is there an active touch?
+     * 是否有触摸
+     */
     private boolean mHasTouch = false;
 
     /**
@@ -66,7 +98,7 @@ public class TouchDisplayView extends View {
 
         private static final int MAX_POOL_SIZE = 10;
         private static final SimplePool<TouchHistory> sPool =
-                new SimplePool<TouchHistory>(MAX_POOL_SIZE);
+                new SimplePool<>(MAX_POOL_SIZE);
 
         public static TouchHistory obtain(float x, float y, float pressure) {
             TouchHistory data = sPool.acquire();
@@ -102,8 +134,6 @@ public class TouchDisplayView extends View {
         /**
          * Add a point to its history. Overwrites oldest point if the maximum
          * number of historical points is already stored.
-         *
-         * @param point
          */
         public void addHistory(float x, float y) {
             PointF p = history[historyIndex];
@@ -116,14 +146,13 @@ public class TouchDisplayView extends View {
                 historyCount++;
             }
         }
-
     }
 
     public TouchDisplayView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
         // SparseArray for touch events, indexed by touch id
-        mTouches = new SparseArray<TouchHistory>(10);
+        mTouches = new SparseArray<>(10);
 
         initialisePaint();
     }
@@ -138,6 +167,7 @@ public class TouchDisplayView extends View {
          * Switch on the action. The action is extracted from the event by
          * applying the MotionEvent.ACTION_MASK. Alternatively a call to
          * event.getActionMasked() would yield in the action as well.
+         * 使用event.getActionMasked()达到同样的效果
          */
         switch (action & MotionEvent.ACTION_MASK) {
 
@@ -148,17 +178,18 @@ public class TouchDisplayView extends View {
                  * Only one touch event is stored in the MotionEvent. Extract
                  * the pointer identifier of this touch from the first index
                  * within the MotionEvent object.
+                 * 在MotionEvent中只保存一个触摸操作。所以从第一个位置获取当前触摸的标示符，即id。
                  */
                 int id = event.getPointerId(0);
 
-                TouchHistory data = TouchHistory.obtain(event.getX(0), event.getY(0),
-                        event.getPressure(0));
+                TouchHistory data = TouchHistory.obtain(event.getX(0), event.getY(0), event.getPressure(0));
                 data.label = "id: " + 0;
 
                 /*
                  * Store the data under its pointer identifier. The pointer
                  * number stays consistent for the duration of a gesture,
                  * accounting for other pointers going up or down.
+                 * 将数据与id绑定在一起。在持续的触摸过程中id是保持不变的。
                  */
                 mTouches.put(id, data);
 
@@ -171,18 +202,21 @@ public class TouchDisplayView extends View {
                 /*
                  * A non-primary pointer has gone down, after an event for the
                  * primary pointer (ACTION_DOWN) has already been received.
+                 * 不是主要的触摸操作，在接收到主要的触摸操作（ACTION_DOWN）后的触摸操作。
+                 * 也就是已经有手指触摸着屏幕不放，又按下一个手指时的事件。
                  */
 
                 /*
                  * The MotionEvent object contains multiple pointers. Need to
                  * extract the index at which the data for this particular event
                  * is stored.
+                 * 这时MotionEvent包含了多个点的触摸信息。需要获取当前事件存放信息的位置。
                  */
                 int index = event.getActionIndex();
                 int id = event.getPointerId(index);
 
-                TouchHistory data = TouchHistory.obtain(event.getX(index), event.getY(index),
-                        event.getPressure(index));
+                TouchHistory data =
+                        TouchHistory.obtain(event.getX(index), event.getY(index), event.getPressure(index));
                 data.label = "id: " + id;
 
                 /*
@@ -200,12 +234,14 @@ public class TouchDisplayView extends View {
                 /*
                  * Final pointer has gone up and has ended the last pressed
                  * gesture.
+                 * 最后一根手指离开屏幕，结束了触摸操作，即所有手指都已离开屏幕。
                  */
 
                 /*
                  * Extract the pointer identifier for the only event stored in
                  * the MotionEvent object and remove it from the list of active
                  * touches.
+                 * 移除
                  */
                 int id = event.getPointerId(0);
                 TouchHistory data = mTouches.get(id);
@@ -221,12 +257,14 @@ public class TouchDisplayView extends View {
                 /*
                  * A non-primary pointer has gone up and other pointers are
                  * still active.
+                 * 非第一个接触屏幕的触摸过程结束。
                  */
 
                 /*
                  * The MotionEvent object contains multiple pointers. Need to
                  * extract the index at which the data for this particular event
                  * is stored.
+                 * 移除
                  */
                 int index = event.getActionIndex();
                 int id = event.getPointerId(index);
@@ -243,6 +281,7 @@ public class TouchDisplayView extends View {
                  * A change event happened during a pressed gesture. (Between
                  * ACTION_DOWN and ACTION_UP or ACTION_POINTER_DOWN and
                  * ACTION_POINTER_UP)
+                 * 在按住的状态下发生的事件。
                  */
 
                 /*
@@ -255,6 +294,7 @@ public class TouchDisplayView extends View {
                  * constant across touch events as long as it remains active.
                  * This identifier is used to keep track of a pointer across
                  * events.
+                 * 循环所有的触摸，将TouchHistory中保存的信息设置为历史信息，将新获取的信息设置为当前触摸位置的信息。
                  */
                 for (int index = 0; index < event.getPointerCount(); index++) {
                     // get pointer id for data stored at this index
@@ -265,9 +305,7 @@ public class TouchDisplayView extends View {
 
                     // add previous position to history and add new values
                     data.addHistory(data.x, data.y);
-                    data.setTouch(event.getX(index), event.getY(index),
-                            event.getPressure(index));
-
+                    data.setTouch(event.getX(index), event.getY(index), event.getPressure(index));
                 }
 
                 break;
@@ -275,6 +313,7 @@ public class TouchDisplayView extends View {
         }
 
         // trigger redraw on UI thread
+        // 让ui线程重新绘制
         this.postInvalidate();
 
         return true;
@@ -291,8 +330,8 @@ public class TouchDisplayView extends View {
             canvas.drawColor(BACKGROUND_ACTIVE);
         } else {
             // draw inactive border
-            canvas.drawRect(mBorderWidth, mBorderWidth, getWidth() - mBorderWidth, getHeight()
-                    - mBorderWidth, mBorderPaint);
+            canvas.drawRect(mBorderWidth, mBorderWidth, getWidth() - mBorderWidth,
+                    getHeight() - mBorderWidth, mBorderPaint);
         }
 
         // loop through all active touches and draw them
@@ -306,35 +345,6 @@ public class TouchDisplayView extends View {
             drawCircle(canvas, id, data);
         }
     }
-
-    /*
-     * Below are only helper methods and variables required for drawing.
-     */
-
-    // radius of active touch circle in dp
-    private static final float CIRCLE_RADIUS_DP = 75f;
-    // radius of historical circle in dp
-    private static final float CIRCLE_HISTORICAL_RADIUS_DP = 7f;
-
-    // calculated radiuses in px
-    private float mCircleRadius;
-    private float mCircleHistoricalRadius;
-
-    private Paint mCirclePaint = new Paint();
-    private Paint mTextPaint = new Paint();
-
-    private static final int BACKGROUND_ACTIVE = Color.WHITE;
-
-    // inactive border
-    private static final float INACTIVE_BORDER_DP = 15f;
-    private static final int INACTIVE_BORDER_COLOR = 0xFFffd060;
-    private Paint mBorderPaint = new Paint();
-    private float mBorderWidth;
-
-    public final int[] COLORS = {
-            0xFF33B5E5, 0xFFAA66CC, 0xFF99CC00, 0xFFFFBB33, 0xFFFF4444,
-            0xFF0099CC, 0xFF9933CC, 0xFF669900, 0xFFFF8800, 0xFFCC0000
-    };
 
     /**
      * Sets up the required {@link android.graphics.Paint} objects for the screen density of this
@@ -356,7 +366,6 @@ public class TouchDisplayView extends View {
         mBorderPaint.setStrokeWidth(mBorderWidth);
         mBorderPaint.setColor(INACTIVE_BORDER_COLOR);
         mBorderPaint.setStyle(Paint.Style.STROKE);
-
     }
 
     /**
@@ -365,10 +374,6 @@ public class TouchDisplayView extends View {
      * {@link TouchDisplayView.TouchHistory} object, while a smaller circle is drawn for each
      * entry in its history. The size of the large circle is scaled depending on
      * its pressure, clamped to a maximum of <code>1.0</code>.
-     *
-     * @param canvas
-     * @param id
-     * @param data
      */
     protected void drawCircle(Canvas canvas, int id, TouchHistory data) {
         // select the color based on the id
@@ -383,8 +388,7 @@ public class TouchDisplayView extends View {
         float pressure = Math.min(data.pressure, 1f);
         float radius = pressure * mCircleRadius;
 
-        canvas.drawCircle(data.x, (data.y) - (radius / 2f), radius,
-                mCirclePaint);
+        canvas.drawCircle(data.x, (data.y) - (radius / 2f), radius, mCirclePaint);
 
         // draw all historical points with a lower alpha value
         mCirclePaint.setAlpha(125);
@@ -394,8 +398,6 @@ public class TouchDisplayView extends View {
         }
 
         // draw its label next to the main circle
-        canvas.drawText(data.label, data.x + radius, data.y
-                - radius, mTextPaint);
+        canvas.drawText(data.label, data.x + radius, data.y - radius, mTextPaint);
     }
-
 }

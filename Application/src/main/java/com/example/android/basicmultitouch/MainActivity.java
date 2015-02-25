@@ -31,7 +31,6 @@ import android.os.Bundle;
  * @see android.view.MotionEvent
  */
 public class MainActivity extends Activity {
-    TouchDisplayView mView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
